@@ -1,0 +1,19 @@
+﻿Space Engineers Navigation (title is TBD)
+-----------
+
+Show a map of GPS coordinates on a chosen LCD Panel or Cockpit.
+
+How to start:
+- build LCD panel or cockpit on the same grid as this script
+- include [GPS] (including squere brackets) into name of an LCD Panel or Cockpit
+- put list of GPS coordinates into Custom Data of such LCD Panel or Cockpit. Format of GPS marks is the same when you use "Copy to Clipboard" on GPS tab
+
+### Multiple maps
+The script supports multiple panels and cockpits, so your grid cana have multiple panels with different list of coordinates to track
+
+
+### Limitations
+- radius of a map is set to 700. This is not configurable atm
+- LCD Panel shouold be placed vertically. Back of the panel gonna represent "forward" of a surface, where listed coordinates are progected
+- Script will use the first screen of a cockpit. Not configurable atm
+
