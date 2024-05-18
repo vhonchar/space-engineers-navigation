@@ -3,9 +3,9 @@
 
 Show a map of GPS coordinates on a chosen LCD Panel or Cockpit.
 
-How to start:
+### How to
 - build LCD panel or cockpit on the same grid as this script
-- include [GPS] (including squere brackets) into name of an LCD Panel or Cockpit
+- include `GPS-Map` into name of an LCD Panel or Cockpit
 - put list of GPS coordinates into Custom Data of such LCD Panel or Cockpit. Format of GPS marks is the same when you use "Copy to Clipboard" on GPS tab
 
 ### Multiple maps
