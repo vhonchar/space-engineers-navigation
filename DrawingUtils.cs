@@ -24,6 +24,7 @@ namespace IngameScript
     {
         public class DrawingUtils
         {
+            private static float DEFAULT_TRANSPARANCY = 66;
             public static void DrawMarker(ref MySpriteDrawFrame frame, Vector2 centerPos, string name, float scale = 1f, float rotation = 0f, float colorScale = 1f)
             {
                 float sin = (float)Math.Sin(rotation);
@@ -39,29 +40,31 @@ namespace IngameScript
                 frame.Add(new MySprite(SpriteType.TEXT, message, position, null, null, "Red", TextAlignment.CENTER, 1f));
             }
 
-            public static void DrawBackground(ref MySpriteDrawFrame frame, IMyTextSurface lcdPanel)
+            public static void DrawBackground(ref MySpriteDrawFrame frame, IMyTextSurface drawingSurface)
             {
-                var size = lcdPanel.SurfaceSize;
-                frame.Add(new MySprite(SpriteType.TEXTURE, "Grid", GetCenter(lcdPanel), size, lcdPanel.ScriptForegroundColor, null, TextAlignment.CENTER, 0f));
+                var size = drawingSurface.SurfaceSize;
+                frame.Add(new MySprite(SpriteType.TEXTURE, "Grid", GetCenter(drawingSurface), size, drawingSurface.ScriptForegroundColor.Alpha(DEFAULT_TRANSPARANCY), null, TextAlignment.CENTER, 0f));
             }
 
-            public static void DrawAntenna(ref MySpriteDrawFrame frame, IMyTextSurface lcdPanel, Vector2 centerPos, float scale = 1f, float rotation = 0f, float colorScale = 1f)
+            public static void DrawAntenna(ref MySpriteDrawFrame frame, IMyTextSurface drawingSerface, Vector2 centerPos, float scale = 1f, float rotation = 0f, float colorScale = 1f)
             {
                 float sin = (float)Math.Sin(rotation);
                 float cos = (float)Math.Cos(rotation);
-                frame.Add(new MySprite(SpriteType.TEXTURE, "Triangle", new Vector2(cos * -1f - sin * 8f, sin * -1f + cos * 8f) * scale + centerPos, new Vector2(10f, 30f) * scale, lcdPanel.ScriptForegroundColor * colorScale, null, TextAlignment.CENTER, rotation)); // antenna base
-                frame.Add(new MySprite(SpriteType.TEXTURE, "SemiCircle", new Vector2(cos * 4f - sin * -7f, sin * 4f + cos * -7f) * scale + centerPos, new Vector2(35f, 20f) * scale, lcdPanel.ScriptForegroundColor * colorScale, null, TextAlignment.CENTER, 4.0143f + rotation)); // abtebba dish
-                frame.Add(new MySprite(SpriteType.TEXTURE, "Triangle", new Vector2(cos * 5f - sin * -7f, sin * 5f + cos * -7f) * scale + centerPos, new Vector2(5f, 20f) * scale, lcdPanel.ScriptForegroundColor * colorScale, null, TextAlignment.CENTER, 0.7854f + rotation)); // antenna antenna
+                Color color = drawingSerface.ScriptForegroundColor.Alpha(DEFAULT_TRANSPARANCY) * colorScale;
+                frame.Add(new MySprite(SpriteType.TEXTURE, "Triangle", new Vector2(cos * -1f - sin * 8f, sin * -1f + cos * 8f) * scale + centerPos, new Vector2(10f, 30f) * scale, color, null, TextAlignment.CENTER, rotation)); // base
+                frame.Add(new MySprite(SpriteType.TEXTURE, "SemiCircle", new Vector2(cos * 4f - sin * -7f, sin * 4f + cos * -7f) * scale + centerPos, new Vector2(35f, 20f) * scale, color, null, TextAlignment.CENTER, 4.0143f + rotation)); // dish
+                frame.Add(new MySprite(SpriteType.TEXTURE, "Triangle", new Vector2(cos * 5f - sin * -7f, sin * 5f + cos * -7f) * scale + centerPos, new Vector2(5f, 20f) * scale, color, null, TextAlignment.CENTER, 0.7854f + rotation)); // antenna
             }
 
             public static void DrawVehicleMark(ref MySpriteDrawFrame frame, IMyTextSurface lcdPanel, Vector2 centerPos, float scale = 1f, float colorScale = 1f)
             {
-                frame.Add(new MySprite(SpriteType.TEXTURE, "Triangle", new Vector2(0f, 0f) * scale + centerPos, new Vector2(10f, 20f) * scale, lcdPanel.ScriptForegroundColor * colorScale, null, TextAlignment.CENTER, 0f));
+                Color color = lcdPanel.ScriptForegroundColor.Alpha(DEFAULT_TRANSPARANCY) * colorScale;
+                frame.Add(new MySprite(SpriteType.TEXTURE, "Triangle", new Vector2(0f, 0f) * scale + centerPos, new Vector2(10f, 20f) * scale, color, null, TextAlignment.CENTER, 0f));
             }
 
             public static Vector2 GetCenter(IMyTextSurface surface)
             {
-                return surface.SurfaceSize / 2;
+                return surface.TextureSize / 2;
             }
         }
     }

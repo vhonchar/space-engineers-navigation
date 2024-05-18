@@ -1,28 +1,16 @@
-﻿using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI.Ingame;
-using Sandbox.ModAPI.Interfaces;
-using SpaceEngineers.Game.ModAPI.Ingame;
+﻿using Sandbox.ModAPI.Ingame;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
-using VRage;
-using VRage.Collections;
-using VRage.Game;
-using VRage.Game.Components;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI.Ingame;
-using VRage.Game.ModAPI.Ingame.Utilities;
-using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
 namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
-        private const string PanelNameContains = "[GPS]";
+        private const string PanelNameContains = "GPS-Map";
         private const int broadcastRadius = 700;
         private TimeSpan refreshInterval = TimeSpan.FromSeconds(2);
 
@@ -34,15 +22,29 @@ namespace IngameScript
             Runtime.UpdateFrequency = UpdateFrequency.Update100;
         }
 
-        public void Main(string argument)
+        public void Main(string argument, UpdateType updateSource)
         {
-
-            if ((DateTime.Now - lastRefreshTime) < refreshInterval)
+            
+            try
             {
-                lastRefreshTime = DateTime.Now;
-                return;
-            }
+                if ((DateTime.Now - lastRefreshTime) < refreshInterval)
+                {
+                    return;
+                }
+                Echo($"Running at {lastRefreshTime.TimeOfDay}");
+                var start = DateTime.Now;
 
+                RunScript();
+                lastRefreshTime = DateTime.Now;
+                Echo($"Complete run in {(lastRefreshTime - start).TotalMilliseconds}ms");
+            } catch(Exception ex)
+            {
+                Echo(ex.ToString());
+            }
+        }
+
+        private void RunScript()
+        {
             var lcdPanels = FindLCDPanels();
             var cockpits = FindCockpits();
 
@@ -55,13 +57,14 @@ namespace IngameScript
             foreach (var lcdPanel in lcdPanels)
             {
                 DrawMapOnLcd(lcdPanel);
+                Echo("");
             }
 
             foreach (var cockpit in cockpits)
             {
                 DrawMapOnCockpit(cockpit);
+                Echo("");
             }
-
         }
 
         private List<IMyTextPanel> FindLCDPanels()
@@ -80,11 +83,11 @@ namespace IngameScript
 
         private void DrawMapOnLcd(IMyTextPanel lcdPanel)
         {
-            Echo($"Drawing on panel '{lcdPanel.CustomName}'");
-            var drawingSurface = lcdPanel;
-            PrepareTextSurfaceForSprites(drawingSurface);
+            Echo($"Panel: '{lcdPanel.CustomName}'");
+            
+            PrepareTextSurfaceForSprites(lcdPanel);
 
-            var frame = drawingSurface.DrawFrame();
+            var frame = lcdPanel.DrawFrame();
 
             DrawingUtils.DrawBackground(ref frame, lcdPanel);
             DrawingUtils.DrawAntenna(ref frame, lcdPanel, DrawingUtils.GetCenter(lcdPanel), 1f, 0f, 1.5f);
@@ -96,7 +99,7 @@ namespace IngameScript
 
         private void DrawMapOnCockpit(IMyCockpit cockpit)
         {
-            Echo($"Drawing on cockpit '{cockpit.CustomName}'");
+            Echo($"Cockpit: '{cockpit.CustomName}'");
 
             var screenToDraw = cockpit.GetSurface(0);
             PrepareTextSurfaceForSprites(screenToDraw);
@@ -112,19 +115,17 @@ namespace IngameScript
 
         private void PrepareTextSurfaceForSprites(IMyTextSurface textSurface)
         {
-            // Set the sprite display mode
             textSurface.ContentType = ContentType.SCRIPT;
-            // Make sure no built-in script has been selected
             textSurface.Script = "";
 
             // enable support for transparent screens, for some reason scripting fills background with non-transparent color
             if(textSurface is IMyCubeBlock)
             {
                 var blockDefinition = ((IMyCubeBlock)textSurface).BlockDefinition.SubtypeId;
-                Echo($"Defition ID of the surface {blockDefinition}");
                 if (blockDefinition.Contains("Transparent"))
                 {
-                    textSurface.BackgroundAlpha = 0;
+                    Echo("Background transparency set to 0");
+                    textSurface.ScriptBackgroundColor = new Color(0,0,0,0);
                 }
             }
 
@@ -135,14 +136,13 @@ namespace IngameScript
             var gpsList = GetGPSList(gpsSource);
             if (gpsList.Count == 0)
             {
-                DrawingUtils.DrawError(ref frame, drawingSurface, $"No GPS coordinates in CustomData\nof panel '{gpsSource.CustomName}'");
+                DrawingUtils.DrawError(ref frame, drawingSurface, $"No GPS coordinates in CustomData");
                 return;
             }
+            Echo($"{gpsList.Count} coordinates");
 
             var drawingSurfaceRadius = GetLCDPanelRadius(drawingSurface);
-            Echo($"Drawing Surface Radius: {drawingSurfaceRadius}");
             var distanceScale = drawingSurfaceRadius / broadcastRadius;
-            Echo($"Distance Scale: {distanceScale}");
 
             foreach (var gps in gpsList)
             {
@@ -155,7 +155,7 @@ namespace IngameScript
                     var proectionTo2D = new Vector2((float)gpsPositionInAntennaLocalCoordinates.X, (float)gpsPositionInAntennaLocalCoordinates.Z);
 
                     var markerPosition =  proectionTo2D * distanceScale + DrawingUtils.GetCenter(drawingSurface);
-                    DrawingUtils.DrawMarker(ref frame, markerPosition, name, 1f, 0f, 1f);
+                    DrawingUtils.DrawMarker(ref frame, markerPosition, name);
                 }
             }
         }
