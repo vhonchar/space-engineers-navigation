@@ -89,6 +89,7 @@ namespace IngameScript
 
             var frame = lcdPanel.DrawFrame();
 
+            RandomFlushOfSpriteCache(frame, lcdPanel);
             DrawingUtils.DrawBackground(ref frame, lcdPanel);
             DrawingUtils.DrawAntenna(ref frame, lcdPanel, DrawingUtils.GetCenter(lcdPanel), 1f, 0f, 1.5f);
             DrawMarkersFromGPS(ref frame, lcdPanel, lcdPanel);
@@ -106,11 +107,35 @@ namespace IngameScript
 
             var frame = screenToDraw.DrawFrame();
 
+            RandomFlushOfSpriteCache(frame, screenToDraw);
             DrawingUtils.DrawBackground(ref frame, screenToDraw);
             DrawingUtils.DrawVehicleMark(ref frame, screenToDraw, DrawingUtils.GetCenter(screenToDraw), 1f, 1.5f);
             DrawMarkersFromGPS(ref frame, cockpit, screenToDraw);
 
             frame.Dispose();
+        }
+
+        // Game caches list of sprites which are sent to the game client
+        // and doesn't resent a sprite, if its state OR position in anarray of all sprites doesn't change.
+        // And like all systems, game has issues with flushing the cache in multiple cases
+        //
+        // This function will randomly add a blank sprite into that array of sprites, forcing server to resend all sprites after that.
+        // Thus, the script will refresh entire screen once in a while
+        private void RandomFlushOfSpriteCache(MySpriteDrawFrame frame, IMyTextSurface drawingSurface)
+        {
+            if (DateTime.Now.Millisecond % 2 == 0)
+            {
+                Echo("Flushing cache");
+                var clearSprite = new MySprite()
+                {
+                    Type = SpriteType.TEXTURE,
+                    Data = "SquareSimple",
+                    Position = drawingSurface.TextureSize / 2,
+                    Size = drawingSurface.TextureSize,
+                    Color = new Color(0, 0, 0, 0) // Fully transparent
+                };
+                frame.Add(clearSprite);
+            }
         }
 
         private void PrepareTextSurfaceForSprites(IMyTextSurface textSurface)
