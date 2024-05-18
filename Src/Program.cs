@@ -150,7 +150,7 @@ namespace IngameScript
                 if (blockDefinition.Contains("Transparent"))
                 {
                     Echo("Background transparency set to 0");
-                    textSurface.ScriptBackgroundColor = new Color(0,0,0,0);
+                    textSurface.ScriptBackgroundColor = textSurface.ScriptBackgroundColor.Alpha(1f);
                 }
             }
 
