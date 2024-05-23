@@ -29,6 +29,7 @@ namespace IngameScript
             var start = DateTime.Now;
 
             DrawMapsWithGpsCoords();
+            
             lastRefreshTime = DateTime.Now;
             Echo($"Complete run in {(lastRefreshTime - start).TotalMilliseconds}ms");
         }
@@ -74,7 +75,7 @@ namespace IngameScript
             Echo($"Cockpit: '{cockpit.CustomName}'");
 
             var config = new MapConfig(cockpit);
-            var drawingSurface = new DrawingSurfaceWrapper(cockpit.GetSurface(0), Echo);
+            var drawingSurface = new DrawingSurfaceWrapper(cockpit.GetSurface(config.ScreenNumber), Echo);
 
             drawingSurface.DrawVehicleMark();
             DrawMarkersFromGPS(drawingSurface, config, cockpit.WorldMatrix);

@@ -19,33 +19,24 @@ namespace IngameScript
 
             public ProgrammConfig(IMyProgrammableBlock programmableBlock)
             {
-                InitializeCustomData(programmableBlock);
-
-                PanelNameIdentifier = GetConfigField(programmableBlock, PanelIdentifierAttrName) ?? PanelIdentifierDefault;
-                SearchLocalGridOnly = bool.Parse(GetConfigField(programmableBlock, SearchLocalGridAttrName) ?? SearchLocalGridDefault);
+                PanelNameIdentifier = GetConfigField(programmableBlock, PanelIdentifierAttrName, PanelIdentifierDefault);
+                SearchLocalGridOnly = bool.Parse(GetConfigField(programmableBlock, SearchLocalGridAttrName, SearchLocalGridDefault));
             }
 
-            private void InitializeCustomData(IMyProgrammableBlock programmableBlock)
+            private string GetConfigField(IMyTerminalBlock mapTerminalBlock, string attrName, string defaultValue)
             {
-                if (!programmableBlock.CustomData.Contains(SearchLocalGridAttrName))
+                if (!mapTerminalBlock.CustomData.Contains(attrName))
                 {
-                    programmableBlock.CustomData = $"{SearchLocalGridAttrName}={SearchLocalGridDefault}\n\n" + programmableBlock.CustomData;
+                    mapTerminalBlock.CustomData = $"{attrName}={defaultValue}\n\n" + mapTerminalBlock.CustomData;
                 }
 
-                if (!programmableBlock.CustomData.Contains(PanelIdentifierAttrName))
-                {
-                    programmableBlock.CustomData = $"{PanelIdentifierAttrName}={PanelIdentifierDefault}\n\n" + programmableBlock.CustomData;
-                }
-            }
-
-            private string GetConfigField(IMyProgrammableBlock programmableBlock, string AttrName)
-            {
-                return programmableBlock.CustomData
+                return mapTerminalBlock.CustomData
                     .Split(new[] { "\n", "\r\n" }, StringSplitOptions.RemoveEmptyEntries)
-                    .First(line => line.StartsWith(AttrName))
-                    ?.Split('=')[1];
+                    .First(line => line.StartsWith(attrName))
+                    ?.Split('=')[1]
+                    ?? defaultValue;
             }
-        
+
         }
     }
 }
