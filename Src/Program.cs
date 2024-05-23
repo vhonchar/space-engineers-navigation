@@ -187,27 +187,24 @@ namespace IngameScript
             var drawingSurfaceRadius = GetLCDPanelRadius(drawingSurface);
             var distanceScale = drawingSurfaceRadius / detectionRadius;
 
-            foreach (var gps in gpsList)
+            foreach (var gpsMark in gpsList)
             {
-                var parts = gps.Split(':');
-                if (parts.Length >= 5 && parts[0] == "GPS")
-                {
-                    var name = parts[1];
-                    Vector3D gpsPosition = new Vector3D(double.Parse(parts[2]), double.Parse(parts[3]), double.Parse(parts[4]));
-                    Vector3D gpsPositionInAntennaLocalCoordinates = Vector3D.Transform(gpsPosition, MatrixD.Invert(gpsSource.WorldMatrix));
-                    var projectionTo2D = new Vector2((float)gpsPositionInAntennaLocalCoordinates.X, (float)gpsPositionInAntennaLocalCoordinates.Z);
+                Vector3D gpsPositionInAntennaLocalCoordinates = Vector3D.Transform(gpsMark.Coords, MatrixD.Invert(gpsSource.WorldMatrix));
+                var projectionTo2D = new Vector2((float)gpsPositionInAntennaLocalCoordinates.X, (float)gpsPositionInAntennaLocalCoordinates.Z);
 
-                    var markerPosition = projectionTo2D * distanceScale + DrawingUtils.GetCenter(drawingSurface);
-                    DrawingUtils.DrawMarker(ref frame, markerPosition, name);
-                }
+                var markerPosition = projectionTo2D * distanceScale + DrawingUtils.GetCenter(drawingSurface);
+                DrawingUtils.DrawMarker(ref frame, markerPosition, gpsMark.Name);
             }
         }
 
-        private List<string> GetGPSList(IMyTerminalBlock lcdPanel)
+        private List<GpsMark> GetGPSList(IMyTerminalBlock lcdPanel)
         {
             var customData = lcdPanel.CustomData;
-            var gpsList = customData.Split(new[] { "\n", "\r\n" }, StringSplitOptions.RemoveEmptyEntries).ToList();
-            return gpsList;
+            return lcdPanel.CustomData
+                .Split(new[] { "\n", "\r\n" }, StringSplitOptions.RemoveEmptyEntries)
+                .ToList()
+                .FindAll(it => GpsMark.IsGpsMark(it))
+                .ConvertAll(it => GpsMark.FromString(it));
         }
 
         private float GetLCDPanelRadius(IMyTextSurface lcdPanel)
