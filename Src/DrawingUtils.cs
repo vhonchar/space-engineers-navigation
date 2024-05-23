@@ -25,7 +25,7 @@ namespace IngameScript
         public class DrawingUtils
         {
             private static float DEFAULT_TRANSPARANCY = 66;
-            public static void DrawMarker(ref MySpriteDrawFrame frame, Vector2 centerPos, string name, float scale = 1f, float rotation = 0f, float colorScale = 1f)
+            public static void DrawMarker(MySpriteDrawFrame frame, Vector2 centerPos, string name, float scale = 1f, float rotation = 0f, float colorScale = 1f)
             {
                 float sin = (float)Math.Sin(rotation);
                 float cos = (float)Math.Cos(rotation);
@@ -34,19 +34,19 @@ namespace IngameScript
                 frame.Add(new MySprite(SpriteType.TEXT, name, new Vector2(-sin * -36f, cos * -36f) * scale + centerPos, null, new Color(0.5019608f * colorScale, 1f * colorScale, 0.5019608f * colorScale, 1f), "Debug", TextAlignment.LEFT, 0.5f * scale)); // name
             }
 
-            public static void DrawError(ref MySpriteDrawFrame frame, IMyTextSurface textSerface, string message)
+            public static void DrawError(MySpriteDrawFrame frame, IMyTextSurface textSerface, string message)
             {
                 var position = new Vector2(textSerface.SurfaceSize.X / 2, textSerface.SurfaceSize.Y / 4);
                 frame.Add(new MySprite(SpriteType.TEXT, message, position, null, null, "Red", TextAlignment.CENTER, 1f));
             }
 
-            public static void DrawBackground(ref MySpriteDrawFrame frame, IMyTextSurface drawingSurface)
+            public static void DrawBackground(MySpriteDrawFrame frame, IMyTextSurface drawingSurface)
             {
                 var size = drawingSurface.SurfaceSize;
                 frame.Add(new MySprite(SpriteType.TEXTURE, "Grid", GetCenter(drawingSurface), size, drawingSurface.ScriptForegroundColor.Alpha(DEFAULT_TRANSPARANCY), null, TextAlignment.CENTER, 0f));
             }
 
-            public static void DrawAntenna(ref MySpriteDrawFrame frame, IMyTextSurface drawingSerface, Vector2 centerPos, float scale = 1f, float rotation = 0f, float colorScale = 1f)
+            public static void DrawAntenna(MySpriteDrawFrame frame, IMyTextSurface drawingSerface, Vector2 centerPos, float scale = 1f, float rotation = 0f, float colorScale = 1f)
             {
                 float sin = (float)Math.Sin(rotation);
                 float cos = (float)Math.Cos(rotation);
@@ -56,7 +56,7 @@ namespace IngameScript
                 frame.Add(new MySprite(SpriteType.TEXTURE, "Triangle", new Vector2(cos * 5f - sin * -7f, sin * 5f + cos * -7f) * scale + centerPos, new Vector2(5f, 20f) * scale, color, null, TextAlignment.CENTER, 0.7854f + rotation)); // antenna
             }
 
-            public static void DrawVehicleMark(ref MySpriteDrawFrame frame, IMyTextSurface lcdPanel, Vector2 centerPos, float scale = 1f, float colorScale = 1f)
+            public static void DrawVehicleMark(MySpriteDrawFrame frame, IMyTextSurface lcdPanel, Vector2 centerPos, float scale = 1f, float colorScale = 1f)
             {
                 Color color = lcdPanel.ScriptForegroundColor.Alpha(DEFAULT_TRANSPARANCY) * colorScale;
                 frame.Add(new MySprite(SpriteType.TEXTURE, "Triangle", new Vector2(0f, 0f) * scale + centerPos, new Vector2(10f, 20f) * scale, color, null, TextAlignment.CENTER, 0f));

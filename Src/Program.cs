@@ -1,9 +1,6 @@
 ﻿using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using VRage.Game.GUI.TextPanel;
-using VRage.Game.ModAPI.Ingame;
 using VRageMath;
 
 namespace IngameScript
@@ -31,13 +28,13 @@ namespace IngameScript
             Echo($"Running at {lastRefreshTime.TimeOfDay}");
             var start = DateTime.Now;
 
-            RunScript();
+            DrawMapsWithGpsCoords();
             lastRefreshTime = DateTime.Now;
             Echo($"Complete run in {(lastRefreshTime - start).TotalMilliseconds}ms");
         }
         
 
-        private void RunScript()
+        private void DrawMapsWithGpsCoords()
         {
             var lcdPanels = FindBlocksContainingInName<IMyTextPanel>(programmConfig.PanelNameIdentifier);
             var cockpits = FindBlocksContainingInName<IMyCockpit>(programmConfig.PanelNameIdentifier);
@@ -48,17 +45,8 @@ namespace IngameScript
                 return;
             }
 
-            foreach (var lcdPanel in lcdPanels)
-            {
-                DrawMapOnLcd(lcdPanel);
-                Echo("");
-            }
-
-            foreach (var cockpit in cockpits)
-            {
-                DrawMapOnCockpit(cockpit);
-                Echo("");
-            }
+            lcdPanels.ForEach(this.DrawMapOnLcd);
+            cockpits.ForEach(this.DrawMapOnCockpit);
         }
 
         private List<T> FindBlocksContainingInName<T>(string nameContains) where T : class, IMyTerminalBlock
@@ -72,125 +60,48 @@ namespace IngameScript
         {
             Echo($"Panel: '{lcdPanel.CustomName}'");
 
-            int detectionRaius = GetDetectionRadius(lcdPanel);
+            var drawingSurface = new DrawingSurfaceWrapper(lcdPanel, Echo);
+            var config = new MapConfig(lcdPanel);
 
-            PrepareTextSurfaceForSprites(lcdPanel);
+            drawingSurface.DrawAntenna();
+            DrawMarkersFromGPS(drawingSurface, config, lcdPanel.WorldMatrix);
 
-            var frame = lcdPanel.DrawFrame();
-
-            RandomFlushOfSpriteCache(frame, lcdPanel);
-            DrawingUtils.DrawBackground(ref frame, lcdPanel);
-            DrawingUtils.DrawAntenna(ref frame, lcdPanel, DrawingUtils.GetCenter(lcdPanel), 1f, 0f, 1.5f);
-            DrawMarkersFromGPS(ref frame, lcdPanel, lcdPanel, detectionRaius);
-
-            frame.Dispose();
+            drawingSurface.Dispose();
         }
 
         private void DrawMapOnCockpit(IMyCockpit cockpit)
         {
             Echo($"Cockpit: '{cockpit.CustomName}'");
 
-            int broadcastRadius = GetDetectionRadius(cockpit);
+            var config = new MapConfig(cockpit);
+            var drawingSurface = new DrawingSurfaceWrapper(cockpit.GetSurface(0), Echo);
 
-            var screenToDraw = cockpit.GetSurface(0);
-            PrepareTextSurfaceForSprites(screenToDraw);
+            drawingSurface.DrawVehicleMark();
+            DrawMarkersFromGPS(drawingSurface, config, cockpit.WorldMatrix);
 
-            var frame = screenToDraw.DrawFrame();
-
-            RandomFlushOfSpriteCache(frame, screenToDraw);
-            DrawingUtils.DrawBackground(ref frame, screenToDraw);
-            DrawingUtils.DrawVehicleMark(ref frame, screenToDraw, DrawingUtils.GetCenter(screenToDraw), 1f, 1.5f);
-            DrawMarkersFromGPS(ref frame, cockpit, screenToDraw, broadcastRadius);
-
-            frame.Dispose();
+            drawingSurface.Dispose();
         }
 
-        private int GetDetectionRadius(IMyTerminalBlock block)
+        private void DrawMarkersFromGPS(DrawingSurfaceWrapper drawingSurface, MapConfig config, MatrixD worldMatrixOfBlock)
         {
-            var configuredDetectionRadius = block.CustomData
-                .Split(new[] { "\n", "\r\n" }, StringSplitOptions.RemoveEmptyEntries)
-                .FirstOrDefault(line => line.StartsWith("DetectionDistance"))
-                ?.Split('=')[1];
-
-            if(string.IsNullOrEmpty(configuredDetectionRadius))
+            if (config.GpsMarks.Count == 0)
             {
-                block.CustomData = $"DetectionDistance={DefaultDetectionRadius}\n" + block.CustomData;
-                return DefaultDetectionRadius;
-            }
-            return int.Parse(configuredDetectionRadius);
-        }
-
-        private void RandomFlushOfSpriteCache(MySpriteDrawFrame frame, IMyTextSurface drawingSurface)
-        {
-            if (DateTime.Now.Millisecond % 2 == 0)
-            {
-                Echo("Flushing cache");
-                var clearSprite = new MySprite()
-                {
-                    Type = SpriteType.TEXTURE,
-                    Data = "SquareSimple",
-                    Position = drawingSurface.TextureSize / 2,
-                    Size = drawingSurface.TextureSize,
-                    Color = new Color(0, 0, 0, 0) // Fully transparent
-                };
-                frame.Add(clearSprite);
-            }
-        }
-
-        private void PrepareTextSurfaceForSprites(IMyTextSurface textSurface)
-        {
-            textSurface.ContentType = ContentType.SCRIPT;
-            textSurface.Script = "";
-
-            // enable support for transparent screens, for some reason scripting fills background with non-transparent color
-            if(textSurface is IMyCubeBlock)
-            {
-                var blockDefinition = ((IMyCubeBlock)textSurface).BlockDefinition.SubtypeId;
-                if (blockDefinition.Contains("Transparent"))
-                {
-                    Echo("Background transparency set to 0");
-                    textSurface.ScriptBackgroundColor = textSurface.ScriptBackgroundColor.Alpha(1f);
-                }
-            }
-        }
-
-        private void DrawMarkersFromGPS(ref MySpriteDrawFrame frame, IMyTerminalBlock gpsSource, IMyTextSurface drawingSurface, int detectionRadius)
-        {
-            var gpsList = GetGPSList(gpsSource);
-            if (gpsList.Count == 0)
-            {
-                DrawingUtils.DrawError(ref frame, drawingSurface, $"No GPS coordinates in CustomData");
+                drawingSurface.DrawError($"No GPS coordinates in CustomData");
                 return;
             }
-            Echo($"{gpsList.Count} coordinates");
+            Echo($"{config.GpsMarks.Count} coordinates");
 
-            var drawingSurfaceRadius = GetLCDPanelRadius(drawingSurface);
-            var distanceScale = drawingSurfaceRadius / detectionRadius;
+            var drawingSurfaceRadius = drawingSurface.Radius;
+            var distanceScale = drawingSurfaceRadius / config.DetectionDistance;
 
-            foreach (var gpsMark in gpsList)
+            foreach (var gpsMark in config.GpsMarks)
             {
-                Vector3D gpsPositionInAntennaLocalCoordinates = Vector3D.Transform(gpsMark.Coords, MatrixD.Invert(gpsSource.WorldMatrix));
+                Vector3D gpsPositionInAntennaLocalCoordinates = Vector3D.Transform(gpsMark.Coords, MatrixD.Invert(worldMatrixOfBlock));
                 var projectionTo2D = new Vector2((float)gpsPositionInAntennaLocalCoordinates.X, (float)gpsPositionInAntennaLocalCoordinates.Z);
 
-                var markerPosition = projectionTo2D * distanceScale + DrawingUtils.GetCenter(drawingSurface);
-                DrawingUtils.DrawMarker(ref frame, markerPosition, gpsMark.Name);
+                var markerPosition = projectionTo2D * distanceScale + drawingSurface.Center;
+                drawingSurface.DrawGpsMarker(markerPosition, gpsMark.Name);
             }
-        }
-
-        private List<GpsMark> GetGPSList(IMyTerminalBlock lcdPanel)
-        {
-            var customData = lcdPanel.CustomData;
-            return lcdPanel.CustomData
-                .Split(new[] { "\n", "\r\n" }, StringSplitOptions.RemoveEmptyEntries)
-                .ToList()
-                .FindAll(it => GpsMark.IsGpsMark(it))
-                .ConvertAll(it => GpsMark.FromString(it));
-        }
-
-        private float GetLCDPanelRadius(IMyTextSurface lcdPanel)
-        {
-            var surfaceSize = lcdPanel.SurfaceSize;
-            return Math.Min(surfaceSize.X, surfaceSize.Y) / 2f;
         }
     }
 }

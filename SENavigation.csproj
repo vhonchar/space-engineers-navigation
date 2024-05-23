@@ -41,6 +41,8 @@
   <Import Project="MDK/MDK.options.props" />
   <Import Project="MDK/MDK.paths.props" Condition="exists('MDK/MDK.paths.props')" />
   <ItemGroup>
+    <Compile Include="Src\DrawingSurfaceWrapper.cs" />
+    <Compile Include="Src\MapConfig.cs" />
     <Compile Include="Src\ProgrammConfig.cs" />
     <Compile Include="Src\GpsMark.cs" />
     <Compile Include="Src\DrawingUtils.cs" />
