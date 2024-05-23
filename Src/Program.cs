@@ -10,15 +10,15 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
-        private string panelNameContains;
         private const int DefaultDetectionRadius = 700;
         private TimeSpan refreshInterval = TimeSpan.FromSeconds(2);
 
         private DateTime lastRefreshTime = DateTime.MinValue;
+        private ProgrammConfig programmConfig;
 
         public Program()
         {
-            InitializeCustomData();
+            programmConfig = new ProgrammConfig(Me);
             Runtime.UpdateFrequency = UpdateFrequency.Update100;
         }
 
@@ -35,29 +35,16 @@ namespace IngameScript
             lastRefreshTime = DateTime.Now;
             Echo($"Complete run in {(lastRefreshTime - start).TotalMilliseconds}ms");
         }
-
-        private void InitializeCustomData()
-        {
-            if (!Me.CustomData.Contains("PanelNameContains"))
-            {
-                Me.CustomData = "PanelNameContains=GPS-Map\n" + Me.CustomData;
-            }
-
-            panelNameContains = Me.CustomData
-                .Split(new[] { "\n", "\r\n" }, StringSplitOptions.RemoveEmptyEntries)
-                .FirstOrDefault(line => line.StartsWith("PanelNameContains"))
-                ?.Split('=')[1]
-                ?? "GPS-Map";
-        }
+        
 
         private void RunScript()
         {
-            var lcdPanels = FindLCDPanels();
-            var cockpits = FindCockpits();
+            var lcdPanels = FindBlocksContainingInName<IMyTextPanel>(programmConfig.PanelNameIdentifier);
+            var cockpits = FindBlocksContainingInName<IMyCockpit>(programmConfig.PanelNameIdentifier);
 
             if (lcdPanels.Count == 0 && cockpits.Count == 0)
             {
-                Echo($"No panel or cockpit with name containing {panelNameContains} found.");
+                Echo($"No panel or cockpit with name containing {programmConfig.PanelNameIdentifier} found.");
                 return;
             }
 
@@ -74,17 +61,10 @@ namespace IngameScript
             }
         }
 
-        private List<IMyTextPanel> FindLCDPanels()
+        private List<T> FindBlocksContainingInName<T>(string nameContains) where T : class, IMyTerminalBlock
         {
-            List<IMyTextPanel> lcdPanels = new List<IMyTextPanel>();
-            GridTerminalSystem.GetBlocksOfType(lcdPanels);
-            return lcdPanels.Where(panel => panel.CustomName.Contains(panelNameContains)).ToList();
-        }
-
-        private List<IMyCockpit> FindCockpits()
-        {
-            List<IMyCockpit> cockpits = new List<IMyCockpit>();
-            GridTerminalSystem.GetBlocksOfType(cockpits, cockpit => cockpit.CustomName.Contains(panelNameContains));
+            List<T> cockpits = new List<T>();
+            GridTerminalSystem.GetBlocksOfType(cockpits, cockpit => cockpit.CustomName.Contains(nameContains));
             return cockpits;
         }
 
