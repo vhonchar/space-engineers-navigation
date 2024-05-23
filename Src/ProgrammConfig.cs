@@ -11,31 +11,39 @@ namespace IngameScript
         {
             private static string PanelIdentifierAttrName = "PanelNameContains";
             private static string PanelIdentifierDefault = "GPS-Map";
-
-            private readonly IMyProgrammableBlock programmableBlock;
+            
+            private static string SearchLocalGridAttrName = "LocalGridOnly";
+            private static string SearchLocalGridDefault = "true";
+            public string PanelNameIdentifier { get; }
+            public bool SearchLocalGridOnly { get; }
 
             public ProgrammConfig(IMyProgrammableBlock programmableBlock)
             {
-                this.programmableBlock = programmableBlock;
-                InitializeCustomData();
+                InitializeCustomData(programmableBlock);
+
+                PanelNameIdentifier = GetConfigField(programmableBlock, PanelIdentifierAttrName) ?? PanelIdentifierDefault;
+                SearchLocalGridOnly = bool.Parse(GetConfigField(programmableBlock, SearchLocalGridAttrName) ?? SearchLocalGridDefault);
             }
 
-            private void InitializeCustomData()
+            private void InitializeCustomData(IMyProgrammableBlock programmableBlock)
             {
+                if (!programmableBlock.CustomData.Contains(SearchLocalGridAttrName))
+                {
+                    programmableBlock.CustomData = $"{SearchLocalGridAttrName}={SearchLocalGridDefault}\n\n" + programmableBlock.CustomData;
+                }
+
                 if (!programmableBlock.CustomData.Contains(PanelIdentifierAttrName))
                 {
                     programmableBlock.CustomData = $"{PanelIdentifierAttrName}={PanelIdentifierDefault}\n\n" + programmableBlock.CustomData;
                 }
             }
 
-            public string PanelNameIdentifier {
-                get {
-                    return programmableBlock.CustomData
+            private string GetConfigField(IMyProgrammableBlock programmableBlock, string AttrName)
+            {
+                return programmableBlock.CustomData
                     .Split(new[] { "\n", "\r\n" }, StringSplitOptions.RemoveEmptyEntries)
-                    .First(line => line.StartsWith(PanelIdentifierAttrName))
-                    ?.Split('=')[1]
-                    ?? PanelIdentifierDefault;
-                }
+                    .First(line => line.StartsWith(AttrName))
+                    ?.Split('=')[1];
             }
         
         }

@@ -63,9 +63,9 @@ namespace IngameScript
 
         private List<T> FindBlocksContainingInName<T>(string nameContains) where T : class, IMyTerminalBlock
         {
-            List<T> cockpits = new List<T>();
-            GridTerminalSystem.GetBlocksOfType(cockpits, cockpit => cockpit.CustomName.Contains(nameContains));
-            return cockpits;
+            List<T> result = new List<T>();
+            GridTerminalSystem.GetBlocksOfType(result, block => block.CustomName.Contains(nameContains) && (!programmConfig.SearchLocalGridOnly || block.CubeGrid == Me.CubeGrid));
+            return result;
         }
 
         private void DrawMapOnLcd(IMyTextPanel lcdPanel)
